@@ -39,7 +39,7 @@ def health():
     return {"status": "ok"}
 
 @app.post("/health")
-def create_healthl(destination: str, month: str, price_pln: int):
+def create_health(destination: str, month: str, price_pln: int):
     validate_wpis(wpis)
     new_id = health[-1]["id"] + 1 if health else 1
     new_health = {"id": new_id, "destination": destination, "month": month, "price_pln": price_pln}
