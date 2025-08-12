@@ -15,17 +15,18 @@ with sqlite3.connect(database) as conn:
     CREATE TABLE IF NOT EXISTS travel( 
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         destination TEXT NOT NULL,
+        
         month TEXT NOT NULL,
         price_pln REAL INTEGER NOT NULL,
         UNIQUE(destination,month)
     )
     """)
 
-class travel(BaseModel):
+class Travel(BaseModel):
     destination: str
     month:str
     price_pln:int
-class traveldestinationUpdate(BaseModel):
+class TraveldestinationUpdate(BaseModel):
     destination: str
 
 
@@ -39,11 +40,15 @@ def health():
     return {"status": "ok"}
 
 @app.post("/health")
-def create_health(destination: str, month: str, price_pln: int):
-    new_id = health[-1]["id"] + 1 if health else 1
-    new_health = {"id": new_id, "destination": destination, "month": month, "price_pln": price_pln}
-    health.append(new_health)
-    return new_health
-
-
-
+def create_health(travel:Travel):
+    try:
+        with get_db_connection(database) as conn:
+            conn.row_factory = sqlite3.Row
+            cur=conn.cursor()
+            cur.execute(
+            "INSERT INTO travel(destination, month, price_pln) VALUES(?,?,?)",
+            (travel.destination, travel.month, travel.price_pln)
+        )
+        new_id = cur.lastrowid
+        cur.execute("SELECT id FROM travel WHERE destination=?", (new_id,))
+        return dict(cur.fetchone())
