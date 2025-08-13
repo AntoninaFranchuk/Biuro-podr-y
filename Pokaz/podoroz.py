@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi import HTTPException
 from pydantic import BaseModel
-from typing import Optinal
+from typing import Optional
 from pydantic import validator
 import sqlite3
 import requests
@@ -26,6 +26,18 @@ class Travel(BaseModel):
     month: str
     price_pln: float
 
+@validator("destination","month")
+def not_empty(cls,v):
+    if not v.strip():
+        raise ValueError("Error")
+    return v
+
+@validator("price_pln")
+def not_negative(cls,v):
+    if v<0:
+        raise ValueError("Error, price_pln must be >=0")
+    return v
+
 def get_currency_rate(currency_code: str) -> float:
     if currency_code.upper() == "PLN":
         return 1.0  # курс PLN к PLN всегда 1
@@ -43,18 +55,6 @@ def get_db_connection():
     conn = sqlite3.connect(database, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
-    
-@validator("destination","month")
-def not_empty(cls,v):
-    if not v.strip():
-        raise ValueError("Error")
-    return v
-
-@validator("price_pln")
-def not_negative(cls,v):
-    if v<0:
-        raise ValueError("Error, price_pln must be >=0")
-    return v
 
 @app.post("/trips",status_code=201)
 def create_trip(trip: Travel):
@@ -62,7 +62,7 @@ def create_trip(trip: Travel):
         cur = conn.cursor()
         try:
             cur.execute(
-                "INSERT INTO travel(destination, month, price_pln) VALUES (?, ?, ?)",
+                "INSERT INTO trips(destination, month, price_pln) VALUES (?, ?, ?)",
                 (trip.destination.strip(), trip.month.strip(), trip.price_pln)
             )
             conn.commit()
